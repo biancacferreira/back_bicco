@@ -1,17 +1,17 @@
 const bcrypt = require('bcrypt-nodejs');
 const { authSecret } = require('../.env');
 const jwt = require('jwt-simple');
-const { first } = require('../config/db');
+const { first, userParams } = require('../config/db');
 
 module.exports = app => {
    const save = async (req, res) =>{
-
-        const user = await app.db('login')
+        console.log(req.body)
+        const userLogin = await app.db('login')
             .where({email: req.body.email})
             .first()
             
             // verifica se já tem cadastro
-            if(user){
+            if(userLogin){
                 return res.json({
                     error: 'E-mail já cadastrado'
                 })
@@ -28,9 +28,9 @@ module.exports = app => {
 
                 //usuario recem cadastrado
                 const newUser = await app.db('login').where({email:  req.body.email}).first()
-
+                    console.log(newUser)
                 // na tabela users cadastra o nome passado pela req e o id do usuario recem cadastrado na tebale login 
-                app.db('users')
+                app.db('usuario')
                     .insert({name: req.body.name, idLogin: newUser.id})
                     .catch(err => res.json({
                         error:'Não possivel cadastrar'
@@ -49,31 +49,31 @@ module.exports = app => {
 
 
                 const info = await app.db('login')
-                    .join('users', 'idLogin', '=', newUser.id)
+                    .join('usuario', 'idLogin', '=', newUser.id)
                     .join('token', 'idUser', '=', newUser.id)
                     .where('login.id', newUser.id)
-                    .select('users.name', 'users.avatar', 'login.email', 'token.token')
+                    .select('usuario.name',  'login.email', 'token.token')
 
                 
                 res.json({
                     data: info[0]
                 })
             }
+
     }
     const getUser = async (req, res) =>{
        
         //vai buscar no banco, precisa ver como vai buscar;
         //exemplo abaixo
         
-        const user = await app.db('token')
+        const userToken = await app.db('token')
             .where({token: req.params.token})
             .first()
 
         
         const info = await app.db('login')
-            .join('users', 'idLogin', '=', user.id)
-            .join('token', 'idUser', '=',user.id)
-            .where('login.id', user.id)
+            .join('usuario', 'idLogin', '=', userToken.idUser)
+            .where('login.id', userToken.idUser)
             .select()
 
         res.json({

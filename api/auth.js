@@ -16,7 +16,7 @@ module.exports = app =>{
         const user = await app.db('login') 
             .where({email: req.body.email})
             .first()
-
+            
             if(user){
                 // ele compara se a senha passada é igual a do banco
                 if(req.body.password != user.password){
@@ -24,30 +24,28 @@ module.exports = app =>{
                         error: 'Senha incorreta'
                     })
                 }
-                const playload = {email: req.body.email}
-                const createToken =   jwt.encode(playload, authSecret)
-             
-                
-                app.db('token')
-                .update({token: createToken})
-                .where({idUser: user.id})                
-                .catch(err => res.json({
-                    error: "Tokken não salvo",
-                }))
-                // retorna todas as informações do usuário
-                
+
+                // retorna todas as informações do usuário               
                 
 
                 const info = await app.db('login')
-                .join('users', 'idLogin', '=', user.id)
+                .join('usuario', 'idLogin', '=', user.id)
                 .join('token', 'idUser', '=', user.id)
                 .where('login.id', user.id)
-                .select('users.name', 'users.avatar', 'login.email', 'token.token')
+                .select('usuario.name',  'login.email', 'token.token')
 
                
-                res.json({
-                    data: info[0]
-                })
+               //verificar se encontrou algum usuário, se não ele retorna um erro
+                if(info[0] == '' || info[0] == undefined){
+                    return res.json({
+                        error: 'Usuário não encontrado'
+                    })                    
+                }else{
+                    res.json({
+                        data: info[0]
+                    })
+                }
+                
                 
             }else{
                 return res.json({
